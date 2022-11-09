@@ -1,8 +1,41 @@
-import Head from 'next/head'
-import Image from 'next/image'
-import styles from '../styles/Home.module.css'
+import Head from "next/head";
+import Image from "next/image";
+import styles from "../styles/Home.module.css";
+import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
+import { useCallback } from "react";
 
 export default function Home() {
+  const { executeRecaptcha } = useGoogleReCaptcha();
+
+  const handleSumit = async (e) => {
+    e.preventDefault();
+    if (!executeRecaptcha) {
+      console.log("Execute recaptcha not yet available");
+      return;
+    }
+
+    const token = await executeRecaptcha("enquiryFormSubmit");
+    console.log(token, "response Google reCaptcha server");
+    submit(token);
+  };
+
+  const submit = async (gReCaptchaToken: string) => {
+    const response = await fetch("/api/faucet", {
+      method: "POST",
+      headers: {
+        Accept: "application/json, text/plain, */*",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        recaptchaToken: gReCaptchaToken,
+      }),
+    });
+
+    response.json().then((res) => {
+      console.log(res, "response from backend");
+    });
+  };
+
   return (
     <div className={styles.container}>
       <Head>
@@ -15,9 +48,9 @@ export default function Home() {
         <h1 className={styles.title}>
           Welcome to <a href="https://nextjs.org">Next.js!</a>
         </h1>
-
+        <button onClick={handleSumit}>Submit</button>
         <p className={styles.description}>
-          Get started by editing{' '}
+          Get started by editing{" "}
           <code className={styles.code}>pages/index.tsx</code>
         </p>
 
@@ -60,12 +93,12 @@ export default function Home() {
           target="_blank"
           rel="noopener noreferrer"
         >
-          Powered by{' '}
+          Powered by{" "}
           <span className={styles.logo}>
             <Image src="/vercel.svg" alt="Vercel Logo" width={72} height={16} />
           </span>
         </a>
       </footer>
     </div>
-  )
+  );
 }
